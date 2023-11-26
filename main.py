@@ -1,6 +1,7 @@
 import os
 import discord
 import asyncio
+import re
 from dotenv import load_dotenv
 from pytube import YouTube
 from discord import FFmpegPCMAudio
@@ -29,6 +30,32 @@ def download_and_save_audio(filename, youtube_url):
         print(f"An error occurred: {e}")
 
 
+def is_youtube_url(url):
+    # Regular expression for matching YouTube video URLs
+    youtube_pattern = (
+        r'(https?://)?(www\.)?'
+        '(youtube|youtu|youtube-nocookie)\.(com|be)/'
+        '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
+
+    match = re.match(youtube_pattern, url)
+    return match is not None
+
+
+def extract_youtube_video_id(url):
+    # Regular expression for matching YouTube video URLs
+    youtube_pattern = (
+        r'(https?://)?(www\.)?'
+        '(youtube|youtu|youtube-nocookie)\.(com|be)/'
+        '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
+
+    match = re.match(youtube_pattern, url)
+
+    if match:
+        return match.group(6)  # Extract the video ID from the match
+    else:
+        return None  # Return None if the URL doesn't match the pattern
+
+
 @bot.event
 async def on_ready():
     print(f"We have logged in as {bot.user}")
@@ -50,15 +77,22 @@ async def save_sound(ctx, name, url):
 
 
 @bot.command(name="play")
-async def play_sound(ctx, name):
+async def play_sound(ctx, name_or_url):
     print("i've been called with {play}")
 
-    # Check if the file path is provided
-    if not name:
+    # Check if parameter has been sent
+    if not name_or_url:
         await ctx.send("Please provide the path to a local MP3 file.")
         return
 
-    file_path = f"{output_folder}/{name}.mp3"
+    # check if user sent youtube url for temp storage
+    user_sent_youtube_url = is_youtube_url(name_or_url)
+    if user_sent_youtube_url:
+        file_path = f"{output_folder}/temp.mp3"
+        await save_sound(ctx, "temp", name_or_url)
+    else:
+        file_path = f"{output_folder}/{name_or_url}.mp3"
+
     if os.path.exists(file_path):
         print(f"The file '{file_path}' exists.")
     else:
@@ -73,18 +107,20 @@ async def play_sound(ctx, name):
 
         # Play the saved MP3 file
         audio_source = FFmpegPCMAudio(file_path)
-        vc.play(audio_source, after=lambda e: print(f'Done playing sound {name}.'))
+        vc.play(audio_source, after=lambda e: print(f'Done playing sound {name_or_url}.'))
 
         # Wait for the audio to finish playing
         while vc.is_playing():
             await asyncio.sleep(1)
 
-        # Say done
-        await ctx.send(f"Done playing {name}.")
         # Disconnect from the voice channel
         await vc.disconnect()
     except Exception as exception:
         print(exception)
         await ctx.send("An error occurred while processing your request.")
+
+    # remove temp
+    if user_sent_youtube_url:
+        os.remove(file_path)
 
 bot.run(os.getenv("TOKEN"))
