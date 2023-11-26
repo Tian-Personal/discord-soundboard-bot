@@ -85,4 +85,4 @@ async def play_sound(ctx, name):
         print(exception)
         await ctx.send("An error occurred while processing your request.")
 
-bot.run("MTE3ODA4MzQ4NzEwNzAwNjQ5NA.G9FO_W.ZdYm3pLEv72oWbE0uRLo1Meyiigjt3ylFdhFpk")
+bot.run("")
