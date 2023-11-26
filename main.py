@@ -14,22 +14,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 output_folder = "saved-sounds"
 
 
-def download_and_save_audio(filename, youtube_url):
-    # Create the "saved-sounds" folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)
-
-    try:
-        # Download the YouTube video
-        print("Downloading video...")
-        yt = YouTube(youtube_url)
-        video_stream = yt.streams.filter(only_audio=True).first()
-        video_stream.download(filename=f"{output_folder}/{filename}.mp3")
-
-        print(f"Audio saved successfully as {filename}.mp3 in the 'saved-sounds' folder.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-
 def is_youtube_url(url):
     # Regular expression for matching YouTube video URLs
     youtube_pattern = (
@@ -39,21 +23,6 @@ def is_youtube_url(url):
 
     match = re.match(youtube_pattern, url)
     return match is not None
-
-
-def extract_youtube_video_id(url):
-    # Regular expression for matching YouTube video URLs
-    youtube_pattern = (
-        r'(https?://)?(www\.)?'
-        '(youtube|youtu|youtube-nocookie)\.(com|be)/'
-        '(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
-
-    match = re.match(youtube_pattern, url)
-
-    if match:
-        return match.group(6)  # Extract the video ID from the match
-    else:
-        return None  # Return None if the URL doesn't match the pattern
 
 
 @bot.event
@@ -71,9 +40,21 @@ async def print_test(ctx, input):
 async def save_sound(ctx, name, url):
     print("i've been called with {save}")
 
-    download_and_save_audio(name, url)
+    # Create the "saved-sounds" folder if it doesn't exist
+    os.makedirs(output_folder, exist_ok=True)
 
-    await ctx.send(f"Audio saved as {name}.")
+    try:
+        # Download the YouTube video
+        print("Downloading video...")
+        yt = YouTube(url)
+        video_stream = yt.streams.filter(only_audio=True).first()
+        video_stream.download(filename=f"{output_folder}/{name}.mp3")
+
+        print(f"Audio saved successfully as {name}.mp3 in the 'saved-sounds' folder.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    await ctx.send(f"Saved audio as {name}.")
 
 
 @bot.command(name="play")
@@ -107,6 +88,7 @@ async def play_sound(ctx, name_or_url):
 
         # Play the saved MP3 file
         audio_source = FFmpegPCMAudio(file_path)
+        await ctx.send(f"Playing {name_or_url}.")
         vc.play(audio_source, after=lambda e: print(f'Done playing sound {name_or_url}.'))
 
         # Wait for the audio to finish playing
@@ -117,7 +99,7 @@ async def play_sound(ctx, name_or_url):
         await vc.disconnect()
     except Exception as exception:
         print(exception)
-        await ctx.send("An error occurred while processing your request.")
+        await ctx.send("Something went wrong oopsie daisy.")
 
     # remove temp
     if user_sent_youtube_url:
