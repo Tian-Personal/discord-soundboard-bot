@@ -123,4 +123,25 @@ async def play_sound(ctx, name_or_url):
     if user_sent_youtube_url:
         os.remove(file_path)
 
+
+@bot.command(name="stop")
+async def disconnect(ctx):
+    # Check if the command author is in a voice channel
+    if ctx.author.voice:
+        # Get the voice channel the author is in
+        voice_channel = ctx.author.voice.channel
+
+        # Get the voice client for the bot in the server of the command author
+        voice_client = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+
+        # Check if the bot is connected to a voice channel
+        if voice_client and voice_client.is_connected():
+            # Disconnect from the voice channel
+            await voice_client.disconnect()
+            await ctx.send(f"Disconnected from {voice_channel}.")
+        else:
+            await ctx.send("I'm not connected to a voice channel.")
+    else:
+        await ctx.send("You're not in a voice channel.")
+
 bot.run(os.getenv("TOKEN"))
