@@ -1,3 +1,16 @@
-/saved-sounds/
-*.idea
+# Secrets and local config
 .env
+
+# Downloaded audio
+/saved-sounds/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors
+.idea/
+*.idea
+.vscode/
